@@ -116,7 +116,7 @@ class _DrawOptions(_Options):
 		"owidth", "ocolor", "shadow", "scolor", "gcolor", "shade",
 		"alpha", "anchor", "angle",
 		"underlinetag", "boldtag", "italictag", "colortag",
-		"surf", "cache")
+		"surf", "cache", "breakwords")
 	_defaults = {
 		"antialias": True, "alpha": 1.0, "angle": 0,
 		"owidth": _default_sentinel,
@@ -288,7 +288,7 @@ class _WrapOptions(_Options):
 	_fields = ("fontname", "fontsize", "sysfontname",
 		"bold", "italic", "underline", "width", "widthem", "strip",
 		"color",
-		"underlinetag", "boldtag", "italictag", "colortag")
+		"underlinetag", "boldtag", "italictag", "colortag", "breakwords")
 	_defaults = {
 		"underlinetag": _default_sentinel,
 		"boldtag": _default_sentinel,
@@ -589,6 +589,18 @@ def _getbreakpoint(text, width, getwidth, canbreakatstart = False):
 		else:
 			return a
 
+# Break a long word so it fits within the given width
+# Doesn't account for syllable breaks or length of tail
+def _breakword(text, curs, width, getwidth):
+	word = text[:curs]
+	tr = 1
+	while getwidth(word[:-tr]) > width:
+		tr += 1
+
+	text = '{}-{}{}'.format(word[:-tr-1], word[-tr-1:], text[curs:])
+	return text, curs - tr 
+
+
 # Split a single line of text.
 # textandtags is the output of _splitbytags, i.e. a sequence of (string, tag spec) tuples.
 def _wrapline(textandtags, width, getwidthbytagspec):
@@ -610,6 +622,8 @@ def _wrapline(textandtags, width, getwidthbytagspec):
 				x = 0
 				canbreakatstart = False
 			else:
+				if width and getwidth(text[:a]) > width:
+					text, a = _breakword(text, a, width, getwidth)
 				line.append((text[:a], tagspec, x))
 				x += getwidth(text[:a])
 				text = text[a:]
@@ -620,6 +634,7 @@ def _wrapline(textandtags, width, getwidthbytagspec):
 def _wrap(text, **kwargs):
 	options = _WrapOptions(**kwargs)
 	# Returns a function mapping strings to int widths in the specified font
+
 	opts = options.copy()
 	def getwidthbytagspec(tagspec):
 		tagspec.updateoptions(opts)
