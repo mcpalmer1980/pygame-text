@@ -597,9 +597,9 @@ def _breakword(text, curs, width, getwidth):
 	while getwidth(word[:-tr]) > width:
 		tr += 1
 
-	text = '{}-{}{}'.format(word[:-tr-1], word[-tr-1:], text[curs:])
-	return text, curs - tr 
-
+	text = '{}- {} {}'.format(word[:-tr-2], word[-tr-2:], text[curs:])
+	return text, curs - tr
+ 
 
 # Split a single line of text.
 # textandtags is the output of _splitbytags, i.e. a sequence of (string, tag spec) tuples.
@@ -621,9 +621,13 @@ def _wrapline(textandtags, width, getwidthbytagspec):
 				line = []
 				x = 0
 				canbreakatstart = False
+			elif width and getwidth(text[:a]) + x > width:
+				text, a = _breakword(text, a, width, getwidth)
+				line.append((text[:a], tagspec, x))
+				x += getwidth(text[:a])
+				text = text[a:]
+				canbreakatstart = True
 			else:
-				if width and getwidth(text[:a]) > width:
-					text, a = _breakword(text, a, width, getwidth)
 				line.append((text[:a], tagspec, x))
 				x += getwidth(text[:a])
 				text = text[a:]
